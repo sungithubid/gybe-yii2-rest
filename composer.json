@@ -1,0 +1,21 @@
+{
+    "name": "gybe/yii2-rest",
+    "description": "yii2-rest",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "sunbing",
+            "email": "834195972@qq.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "yiisoft/yii2": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "gybe\\rest\\": "src"
+        }
+    }
+}
