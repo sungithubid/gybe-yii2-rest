@@ -95,7 +95,6 @@ class IndexAction extends Action
 
         /* @var $modelClass \yii\db\BaseActiveRecord */
         $modelClass = $this->modelClass;
-
         $query = $modelClass::find();
         if (!empty($filter)) {
             $query->andWhere($filter);
