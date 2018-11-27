@@ -22,7 +22,7 @@ composer require --prefer-dist "gybe/yii2-rest" "~1.0.0"
 or add
 
 ```
-"mdmsoft/yii2-captcha": "~1.0"
+"gybe/yii2-rest": "~1.0"
 ```
 
 to the require section of your application's `composer.json` file.
