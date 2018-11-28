@@ -16,13 +16,13 @@ The preferred way to install this extension is through [composer](http://getcomp
 Either run
 
 ```bash
-composer require --prefer-dist "gybe/yii2-rest" "~1.0.0"
+composer require --prefer-dist "gybe/yii2-rest" "@dev"
 ```
 
 or add
 
 ```
-"gybe/yii2-rest": "~1.0"
+"gybe/yii2-rest": "@dev"
 ```
 
 to the require section of your application's `composer.json` file.
