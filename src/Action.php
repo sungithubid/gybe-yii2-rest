@@ -5,7 +5,7 @@
  * Time: 下午2:43
  */
 
-namespace sun\rest;
+namespace gybe\rest;
 
 use Yii;
 use yii\base\InvalidConfigException;
