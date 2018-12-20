@@ -30,17 +30,25 @@ class IndexAction extends Action
      * ]
      * ```
      *
-     * 2. 把过滤条件放到requestBody eg. `{"filter":{"and":[{"id":1}]}}`
+     * 2. 把过滤条件GET参数 eg. `http:xxx.com?gender=1`
      *
      * @see \yii\data\DataFilter
      */
     public $dataFilter;
 
     /**
-     * 手动指定的过滤属性,用于处理关联资源
-     * @var array eg. [['gender' => 1], ['status' => 1]]
+     * 手动指定的过滤属性
+     * @var array eg. [['type' => 1], ['status' => 1]]
      */
     public $specifiedFilter;
+
+
+    /**
+     * 指定可筛选的request参数
+     * @var array  eg.['gender', 'birthday']
+     */
+    public $filterParams;
+
 
     public function run()
     {
@@ -53,26 +61,8 @@ class IndexAction extends Action
      */
     protected function prepareDataProvider()
     {
-        $requestParams = Yii::$app->getRequest()->getBodyParams();
-
-        if (empty($requestParams)) {
-            $requestParams = Yii::$app->getRequest()->getQueryParams();
-        }
-
-        if ($this->specifiedFilter) {
-            $specifiedFilter = [
-                'filter' => [
-                    'and' => $this->specifiedFilter
-                ]
-            ];
-            if ($requestParams && isset($requestParams['filter'])) {
-                if (isset($requestParams['filter']['and'])) {
-                    $requestParams['filter']['and'] = array_merge($requestParams['filter']['and'], $this->specifiedFilter);
-                }
-            } else {
-                $requestParams = $specifiedFilter;
-            }
-        }
+        $requestParams = Yii::$app->getRequest()->getQueryParams();
+        $filterParams = $this->getFilter();
 
         $filter = null;
         if ($this->dataFilter !== null) {
@@ -80,7 +70,7 @@ class IndexAction extends Action
                 $this->dataFilter = Yii::createObject($this->dataFilter);
             }
 
-            if ($this->dataFilter->load($requestParams)) {
+            if ($this->dataFilter->load($filterParams)) {
                 $filter = $this->dataFilter->build();
                 if ($filter === false) {
                     Yii::warning($this->dataFilter->errors);
@@ -95,6 +85,7 @@ class IndexAction extends Action
 
         /* @var $modelClass \yii\db\BaseActiveRecord */
         $modelClass = $this->modelClass;
+
         $query = $modelClass::find();
         if (!empty($filter)) {
             $query->andWhere($filter);
@@ -110,6 +101,56 @@ class IndexAction extends Action
                 'params' => $requestParams,
             ],
         ]);
+    }
+
+    /**
+     * 获取筛选条件
+     * @return array
+     */
+    public function getFilter()
+    {
+        $filterArr = [];
+        $filter = $this->filterParams();
+
+
+        if ($filter) {
+            $filterData = $filter;
+        }
+        if ($this->specifiedFilter) {
+            $filterData = $this->specifiedFilter;
+        }
+        if ($filter && $this->specifiedFilter) {
+            $filterData = array_merge($filter, $this->specifiedFilter);
+        }
+
+        if (isset($filterData)) {
+            $filterArr = [
+                'filter' => [
+                    'and' => $filterData
+                ]
+            ];
+        }
+
+        return $filterArr;
+    }
+
+    /**
+     * 处理request参数
+     * @return array
+     */
+    public function filterParams()
+    {
+        $data = [];
+        $requestParams = Yii::$app->getRequest()->getQueryParams();
+        if ($this->filterParams && is_array($this->filterParams)) {
+            foreach ($this->filterParams as $v) {
+                if (isset($requestParams[$v])) {
+                    $temp[$v] = $requestParams[$v];
+                    $data[] = $temp;
+                }
+            }
+        }
+        return $data;
     }
 
 }
