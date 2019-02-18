@@ -24,30 +24,48 @@ class IndexAction extends Action
      *     'class' => 'yii\data\ActiveDataFilter',
      *     'searchModel' => function () {
      *         return (new \yii\base\DynamicModel(['id' => null, 'name' => null, 'price' => null]))
-     *             ->addRule('id', 'integer')
+     *             ->addRule('gender', 'integer')
      *             ->addRule('name', 'string');
      *     },
      * ]
      * ```
      *
-     * 2. 把过滤条件GET参数 eg. `http:xxx.com?gender=1`
+     * 2. 把过滤条件作为GET请求的参数 eg. `http://xxx.com?gender=1`
      *
      * @see \yii\data\DataFilter
      */
     public $dataFilter;
 
     /**
-     * 手动指定的过滤属性
-     * @var array eg. [['type' => 1], ['status' => 1]]
+     * 允许排序的参数字段
+     * @var array  eg. ['created_at', 'hits']
      */
-    public $specifiedFilter;
-
+    public $filterOrder;
 
     /**
-     * 指定可筛选的request参数
-     * @var array  eg.['gender', 'birthday']
+     * 用于筛选，复杂的自定义查询
+     *
+     * 使用方法如下:
+     * 1. 设置返回query对象的回调函数
+     * 'buildQuery' => function() {
+     *       return call_user_func(['openapi\models\User', 'userList']);
+     *  }
+     *
+     * 2. 实现userList()方法，例如，用户查询可以用gender来筛选
+     *   public static function userList()
+     *   {
+     *       $params = Yii::$app->getRequest()->getQueryParams();
+     *       $query = self::find();
+     *       if (isset($params['gender'])) {
+     *       $query->andWhere(['gender' => (int)$params['gender']]);
+     *       }
+     *
+     *       return $query;
+     *    }
+     *
+     * @var object
      */
-    public $filterParams;
+    public $buildQuery;
 
 
     public function run()
@@ -62,7 +80,6 @@ class IndexAction extends Action
     protected function prepareDataProvider()
     {
         $requestParams = Yii::$app->getRequest()->getQueryParams();
-        $filterParams = $this->getFilter();
 
         $filter = null;
         if ($this->dataFilter !== null) {
@@ -70,10 +87,9 @@ class IndexAction extends Action
                 $this->dataFilter = Yii::createObject($this->dataFilter);
             }
 
-            if ($this->dataFilter->load($filterParams)) {
+            if ($this->dataFilter->load($requestParams)) {
                 $filter = $this->dataFilter->build();
                 if ($filter === false) {
-                    Yii::warning($this->dataFilter->errors);
                     return $this->dataFilter;
                 }
             }
@@ -86,11 +102,19 @@ class IndexAction extends Action
         /* @var $modelClass \yii\db\BaseActiveRecord */
         $modelClass = $this->modelClass;
 
-        $query = $modelClass::find();
+        // filter
+        if ($this->buildQuery !== null && $this->buildQuery instanceof \Closure) {
+            $query = Yii::createObject($this->buildQuery);
+        } else {
+            $query = $modelClass::find();
+        }
+
         if (!empty($filter)) {
             $query->andWhere($filter);
         }
 
+        // sort
+        $sortParams = $this->filterOrderParams($requestParams);
         return Yii::createObject([
             'class' => ActiveDataProvider::className(),
             'query' => $query,
@@ -98,59 +122,26 @@ class IndexAction extends Action
                 'params' => $requestParams,
             ],
             'sort' => [
-                'params' => $requestParams,
+                'params' => $sortParams,
             ],
         ]);
     }
 
     /**
-     * 获取筛选条件
+     * 过滤排序参数
+     * @param $params
      * @return array
      */
-    public function getFilter()
+    public function filterOrderParams($params)
     {
-        $filterArr = [];
-        $filter = $this->filterParams();
-
-
-        if ($filter) {
-            $filterData = $filter;
-        }
-        if ($this->specifiedFilter) {
-            $filterData = $this->specifiedFilter;
-        }
-        if ($filter && $this->specifiedFilter) {
-            $filterData = array_merge($filter, $this->specifiedFilter);
-        }
-
-        if (isset($filterData)) {
-            $filterArr = [
-                'filter' => [
-                    'and' => $filterData
-                ]
-            ];
-        }
-
-        return $filterArr;
-    }
-
-    /**
-     * 处理request参数
-     * @return array
-     */
-    public function filterParams()
-    {
-        $data = [];
-        $requestParams = Yii::$app->getRequest()->getQueryParams();
-        if ($this->filterParams && is_array($this->filterParams)) {
-            foreach ($this->filterParams as $v) {
-                if (isset($requestParams[$v])) {
-                    $temp[$v] = $requestParams[$v];
-                    $data[] = $temp;
+        if ($this->filterOrder && isset($params['sort'])) {
+            foreach ($this->filterOrder as $order) {
+                if ($params['sort'] == $order || $params['sort'] == '-' . $order) {
+                    return ['sort' => $params['sort']];
                 }
             }
         }
-        return $data;
+        return [];
     }
 
 }

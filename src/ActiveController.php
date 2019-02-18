@@ -71,15 +71,15 @@ class ActiveController extends \yii\rest\ActiveController
                         }
 
                         $response->data = [
-                            'error' => 1,
                             'code' => $status,
-                            'http_status' => $status,
                             'message' => $message,
                             'timestamp' => time(),
                         ];
 
                     } else {
                         $response->data = [
+                            'code' => 0,
+                            'message' => '',
                             'data' => $response->data,
                             'timestamp' => time(),
                         ];
@@ -103,9 +103,6 @@ class ActiveController extends \yii\rest\ActiveController
                 'modelClass' => $this->modelClass,
                 'checkAccess' => [$this, 'checkAccess'],
             ],
-
-
-
         ]);
     }
 
