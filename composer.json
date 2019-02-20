@@ -9,7 +9,6 @@
             "email": "834195972@qq.com"
         }
     ],
-    "minimum-stability": "dev",
     "require": {
         "yiisoft/yii2": "^2.0"
     },
